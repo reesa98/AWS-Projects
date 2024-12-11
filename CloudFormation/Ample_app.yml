@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CloudFormation Project
+
+Resources:
+  rdsVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "192.168.0.0/16"
+      EnableDnsHostnames: false
+      EnableDnsSupport: false
+      Tags: 
+        - Key: "Name"
+          Value: "RDS-VPC"
+  
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "us-east-1a"
+      CidrBlock: "192.168.1.0/24"
+      Tags: 
+        - Key: "Name"
+          Value: "PrivateSubnet1"
+      VpcId: 
+        Ref: "rdsVPC" # Required
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "us-east-1b"
+      CidrBlock: "192.168.2.0/24"
+      Tags: 
+        - Key: "Name"
+          Value: "PrivateSubnet2"
+      VpcId: 
+        Ref : "rdsVPC" # Required
+
+  rdsSecGroup:
+   Type: AWS::EC2::SecurityGroup
+   Properties:
+     GroupDescription: "rdsSg" # Required
+     SecurityGroupEgress: 
+      - CidrIp: "0.0.0.0/0"
+        Description: "Egress rules"   
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80
+     SecurityGroupIngress: 
+      - CidrIp: "0.0.0.0/0"
+        Description: "Ingress rules"
+        FromPort: 3306
+        IpProtocol: tcp
+        ToPort: 3306
+     Tags: 
+      - Key: "Name"
+        Value: "RdsSecGroup"
+     VpcId:
+      Ref : "rdsVPC"
+
+  rdsSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "I am creating this Subnet group for this project" # Required
+      SubnetIds: # Required
+        - Ref : "PrivateSubnet1"
+        - Ref : "PrivateSubnet2"
+      Tags: 
+        - Key: "Name"
+          Value: "RDSSubnetGroup"
+
+  rdsInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: "20"
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      BackupRetentionPeriod: "7"
+      DBInstanceClass: "db.t3.micro"
+      DBName: "Ampledb"
+      #DBSecurityGroups: 
+      #  - Ref : "rdsSecGroup"
+      DBSubnetGroupName: 
+         Ref: "rdsSubnetGroup"
+      DedicatedLogVolume: false
+      Engine: "MySQL"
+      EngineVersion: "8.0.32"
+      ManageMasterUserPassword: false
+      MasterUserPassword: "Aws123456789"
+      MasterUsername: "awsuser"
+      Port: "3306"
+      PubliclyAccessible: false
+      Tags: 
+        - Key: "Name"
+          Value: "RDSInstance"
+      VPCSecurityGroups: 
+        - Ref :  "rdsSecGroup"
